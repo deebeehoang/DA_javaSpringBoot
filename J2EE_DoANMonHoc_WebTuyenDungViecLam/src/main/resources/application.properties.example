@@ -1,0 +1,19 @@
+spring.application.name=DA_WebTuyenDungViecLam
+
+# Database - thay bang thong tin cua ban
+spring.datasource.url=jdbc:mysql://localhost:3306/job_recruitment?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh
+spring.datasource.username=root
+spring.datasource.password=YOUR_DB_PASSWORD
+
+# JPA / Hibernate
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+
+# JWT - thay bang secret key cua ban (toi thieu 256 bits)
+jwt.secret=YOUR_JWT_SECRET_KEY_HERE
+jwt.expiration=86400000
+
+# Mapbox - thay bang access token cua ban
+mapbox.access-token=YOUR_MAPBOX_ACCESS_TOKEN

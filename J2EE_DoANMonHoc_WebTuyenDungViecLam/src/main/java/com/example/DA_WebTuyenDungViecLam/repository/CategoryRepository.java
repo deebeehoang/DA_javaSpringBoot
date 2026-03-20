@@ -1,0 +1,14 @@
+package com.example.DA_WebTuyenDungViecLam.repository;
+
+import com.example.DA_WebTuyenDungViecLam.entity.Category;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface CategoryRepository extends JpaRepository<Category, Integer> {
+
+    Optional<Category> findBySlug(String slug);
+
+    List<Category> findByActiveTrue();
+}
