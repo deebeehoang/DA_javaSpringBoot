@@ -14,11 +14,33 @@ export default function Navbar() {
 
   useEffect(() => {
     if (!user) return;
+    // Lấy unread count ban đầu
     notificationService.unreadCount().then((r) => setUnreadCount(r.data.data ?? 0)).catch(() => {});
-    const interval = setInterval(() => {
-      notificationService.unreadCount().then((r) => setUnreadCount(r.data.data ?? 0)).catch(() => {});
-    }, 30000);
-    return () => clearInterval(interval);
+
+    // SSE realtime notifications
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const eventSource = new EventSource(`/api/notifications/stream?token=${token}`);
+
+    eventSource.addEventListener('notification', (event) => {
+      const notification = JSON.parse(event.data);
+      setUnreadCount((c) => c + 1);
+      // Nếu dropdown đang mở, thêm notification mới vào đầu danh sách
+      setNotifications((prev) => prev.length > 0 ? [notification, ...prev] : prev);
+    });
+
+    eventSource.onerror = () => {
+      eventSource.close();
+      // Fallback polling khi SSE mất kết nối
+      const interval = setInterval(() => {
+        notificationService.unreadCount().then((r) => setUnreadCount(r.data.data ?? 0)).catch(() => {});
+      }, 30000);
+      // Thử reconnect SSE sau 5s
+      setTimeout(() => clearInterval(interval), 5000);
+    };
+
+    return () => eventSource.close();
   }, [user]);
 
   useEffect(() => {
