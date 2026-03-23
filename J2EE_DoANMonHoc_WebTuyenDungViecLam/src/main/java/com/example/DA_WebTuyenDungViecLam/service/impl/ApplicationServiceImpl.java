@@ -7,6 +7,7 @@ import com.example.DA_WebTuyenDungViecLam.entity.Candidate;
 import com.example.DA_WebTuyenDungViecLam.entity.Job;
 import com.example.DA_WebTuyenDungViecLam.enums.ApplicationStatus;
 import com.example.DA_WebTuyenDungViecLam.enums.JobStatus;
+import com.example.DA_WebTuyenDungViecLam.enums.NotificationType;
 import com.example.DA_WebTuyenDungViecLam.exception.DuplicateResourceException;
 import com.example.DA_WebTuyenDungViecLam.exception.ResourceNotFoundException;
 import com.example.DA_WebTuyenDungViecLam.exception.UnauthorizedException;
@@ -58,8 +59,24 @@ public class ApplicationServiceImpl implements ApplicationService {
         // Notify employer
         Long employerUserId = job.getEmployer().getUser().getId();
         String candidateName = candidate.getUser().getFullName();
-        notificationService.create(employerUserId,
-                candidateName + " đã ứng tuyển vào vị trí \"" + job.getTitle() + "\"");
+        notificationService.create(
+                employerUserId,
+                NotificationType.APPLICATION,
+                "Ứng tuyển mới",
+                candidateName + " đã ứng tuyển vào vị trí \"" + job.getTitle() + "\"",
+                "/employer/applications"
+        );
+
+        // Notify candidate (xác nhận đã ứng tuyển thành công)
+        Long candidateUserId = candidate.getUser().getId();
+        String companyName = job.getEmployer().getCompanyName();
+        notificationService.create(
+                candidateUserId,
+                NotificationType.APPLICATION,
+                "Ứng tuyển thành công",
+                "Bạn đã ứng tuyển thành công vào vị trí \"" + job.getTitle() + "\" tại " + companyName,
+                "/candidate/applications"
+        );
 
         return toResponse(app);
     }
@@ -92,8 +109,28 @@ public class ApplicationServiceImpl implements ApplicationService {
             throw new UnauthorizedException("Bạn không có quyền cập nhật application này");
         }
 
-        app.setStatus(ApplicationStatus.valueOf(status.toUpperCase()));
+        ApplicationStatus newStatus = ApplicationStatus.valueOf(status.toUpperCase());
+        app.setStatus(newStatus);
         app = applicationRepository.save(app);
+
+        // Notify candidate về thay đổi trạng thái
+        Long candidateUserId = app.getCandidate().getUser().getId();
+        String jobTitle = app.getJob().getTitle();
+        String companyName = app.getJob().getEmployer().getCompanyName();
+        String statusText = switch (newStatus) {
+            case APPROVED -> "được chấp nhận";
+            case REJECTED -> "bị từ chối";
+            case INTERVIEW -> "được mời phỏng vấn";
+            default -> "được cập nhật";
+        };
+        notificationService.create(
+                candidateUserId,
+                NotificationType.JOB_UPDATE,
+                "Cập nhật đơn ứng tuyển",
+                "Đơn ứng tuyển vị trí \"" + jobTitle + "\" tại " + companyName + " đã " + statusText,
+                "/candidate/applications"
+        );
+
         return toResponse(app);
     }
 

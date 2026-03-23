@@ -2,24 +2,44 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { jobService } from '@/services/jobService';
 import { categoryService } from '@/services/categoryService';
-import type { Job, Category, JobType } from '@/types';
+import { locationService, type Province } from '@/services/locationService';
+import type { Job, Category, JobType, JobLevel } from '@/types';
+
+const jobTypeLabels: Record<string, string> = {
+  FULL_TIME: 'Full-time', PART_TIME: 'Part-time', INTERNSHIP: 'Thực tập', FREELANCE: 'Freelance',
+};
+const jobLevelLabels: Record<string, string> = {
+  INTERN: 'Intern', FRESHER: 'Fresher', JUNIOR: 'Junior', SENIOR: 'Senior', MANAGER: 'Manager',
+};
 
 export default function JobListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [provinces, setProvinces] = useState<Province[]>([]);
   const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const keyword = searchParams.get('keyword') ?? '';
   const categoryId = searchParams.get('categoryId') ?? '';
   const city = searchParams.get('city') ?? '';
   const jobType = searchParams.get('jobType') ?? '';
+  const jobLevel = searchParams.get('jobLevel') ?? '';
+  const salaryMin = searchParams.get('salaryMin') ?? '';
+  const salaryMax = searchParams.get('salaryMax') ?? '';
   const page = Number(searchParams.get('page') ?? '0');
 
   useEffect(() => {
     categoryService.getAll().then((res) => setCategories(res.data.data ?? []));
+    locationService.getProvinces().then(setProvinces).catch(() => {});
   }, []);
+
+  // Auto-show advanced filters if they have values
+  useEffect(() => {
+    if (jobLevel || salaryMin || salaryMax) setShowAdvanced(true);
+  }, [jobLevel, salaryMin, salaryMax]);
 
   useEffect(() => {
     setLoading(true);
@@ -29,6 +49,9 @@ export default function JobListPage() {
         categoryId: categoryId ? Number(categoryId) : undefined,
         city: city || undefined,
         jobType: (jobType as JobType) || undefined,
+        jobLevel: (jobLevel as JobLevel) || undefined,
+        salaryMin: salaryMin ? Number(salaryMin) : undefined,
+        salaryMax: salaryMax ? Number(salaryMax) : undefined,
         page,
         size: 12,
       })
@@ -36,9 +59,10 @@ export default function JobListPage() {
         const pageData = res.data.data as any;
         setJobs(pageData?.content ?? []);
         setTotalPages(pageData?.totalPages ?? 0);
+        setTotalElements(pageData?.totalElements ?? 0);
       })
       .finally(() => setLoading(false));
-  }, [keyword, categoryId, city, jobType, page]);
+  }, [keyword, categoryId, city, jobType, jobLevel, salaryMin, salaryMax, page]);
 
   const updateFilter = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams);
@@ -48,112 +72,229 @@ export default function JobListPage() {
     setSearchParams(params);
   };
 
+  const clearFilters = () => {
+    setSearchParams({});
+    setShowAdvanced(false);
+  };
+
+  const hasFilters = keyword || categoryId || city || jobType || jobLevel || salaryMin || salaryMax;
+
+  const formatSalary = (min?: number, max?: number) => {
+    if (!min && !max) return null;
+    const fmt = (n: number) => {
+      if (n >= 1000000) return (n / 1000000).toFixed(0) + ' triệu';
+      if (n >= 1000) return (n / 1000).toFixed(0) + 'K';
+      return n.toLocaleString();
+    };
+    if (min && max) return `${fmt(min)} - ${fmt(max)}`;
+    if (min) return `Từ ${fmt(min)}`;
+    return `Đến ${fmt(max!)}`;
+  };
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold text-gray-800">Tìm kiếm việc làm</h1>
+    <div className="min-h-screen bg-gray-50">
+      {/* Search Header */}
+      <div className="border-b bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-6">
+          <h1 className="text-2xl font-bold text-gray-900">Tìm kiếm việc làm</h1>
+          <p className="mt-1 text-sm text-gray-500">Khám phá hàng ngàn cơ hội việc làm phù hợp với bạn</p>
 
-      {/* Filters */}
-      <div className="mb-8 grid gap-4 md:grid-cols-4">
-        <input
-          type="text"
-          placeholder="Từ khóa..."
-          value={keyword}
-          onChange={(e) => updateFilter('keyword', e.target.value)}
-          className="rounded-lg border px-4 py-2 focus:border-blue-500 focus:outline-none"
-        />
-        <select
-          value={categoryId}
-          onChange={(e) => updateFilter('categoryId', e.target.value)}
-          className="rounded-lg border px-4 py-2 focus:border-blue-500 focus:outline-none"
-        >
-          <option value="">Tất cả danh mục</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-        <input
-          type="text"
-          placeholder="Thành phố..."
-          value={city}
-          onChange={(e) => updateFilter('city', e.target.value)}
-          className="rounded-lg border px-4 py-2 focus:border-blue-500 focus:outline-none"
-        />
-        <select
-          value={jobType}
-          onChange={(e) => updateFilter('jobType', e.target.value)}
-          className="rounded-lg border px-4 py-2 focus:border-blue-500 focus:outline-none"
-        >
-          <option value="">Tất cả loại</option>
-          <option value="PART_TIME">Part-time</option>
-          <option value="FULL_TIME">Full-time</option>
-          <option value="INTERNSHIP">Thực tập</option>
-          <option value="FREELANCE">Freelance</option>
-        </select>
-      </div>
-
-      {/* Job list */}
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-        </div>
-      ) : jobs.length === 0 ? (
-        <p className="py-12 text-center text-gray-500">Không tìm thấy việc làm nào.</p>
-      ) : (
-        <>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {jobs.map((job) => (
-              <Link
-                key={job.id}
-                to={`/jobs/${job.id}`}
-                className="rounded-lg border bg-white p-6 hover:shadow-md"
-              >
-                <h3 className="text-lg font-semibold text-gray-800">{job.title}</h3>
-                <p className="mt-1 text-sm text-blue-600">{job.employer.companyName}</p>
-                <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500">
-                  <span className="rounded bg-blue-50 px-2 py-1">{job.jobType}</span>
-                  <span className="rounded bg-green-50 px-2 py-1">{job.city}</span>
-                  {job.salaryMin != null && (
-                    <span className="rounded bg-yellow-50 px-2 py-1">
-                      {job.salaryMin.toLocaleString()}đ
-                      {job.salaryMax ? ` - ${job.salaryMax.toLocaleString()}đ` : '+'}
-                    </span>
-                  )}
-                </div>
-                {job.deadline && (
-                  <p className="mt-2 text-xs text-gray-400">
-                    Hạn: {new Date(job.deadline).toLocaleDateString('vi-VN')}
-                  </p>
-                )}
-              </Link>
-            ))}
+          {/* Main Filters */}
+          <div className="mt-5 flex flex-col gap-3 md:flex-row">
+            <div className="relative flex-1">
+              <svg className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Tìm theo từ khóa, vị trí, công ty..."
+                value={keyword}
+                onChange={(e) => updateFilter('keyword', e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 text-sm transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <select value={city} onChange={(e) => updateFilter('city', e.target.value)}
+              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 md:w-52">
+              <option value="">Tất cả tỉnh/thành</option>
+              {provinces.map((p) => (
+                <option key={p.id} value={p.name}>{p.name}</option>
+              ))}
+            </select>
+            <select value={categoryId} onChange={(e) => updateFilter('categoryId', e.target.value)}
+              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 md:w-48">
+              <option value="">Tất cả danh mục</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-8 flex justify-center gap-2">
-              {Array.from({ length: totalPages }, (_, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    const params = new URLSearchParams(searchParams);
-                    params.set('page', String(i));
-                    setSearchParams(params);
-                  }}
-                  className={`rounded px-3 py-1 text-sm ${
-                    i === page
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {i + 1}
+          {/* Filter Tags Row */}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap gap-2">
+              {['FULL_TIME', 'PART_TIME', 'INTERNSHIP', 'FREELANCE'].map((t) => (
+                <button key={t} onClick={() => updateFilter('jobType', jobType === t ? '' : t)}
+                  className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition ${
+                    jobType === t ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}>
+                  {jobTypeLabels[t]}
                 </button>
               ))}
             </div>
+            <div className="mx-1 h-5 w-px bg-gray-200" />
+            <button onClick={() => setShowAdvanced(!showAdvanced)}
+              className="flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-100">
+              <svg className={`h-3.5 w-3.5 transition ${showAdvanced ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+              Bộ lọc nâng cao
+            </button>
+            {hasFilters && (
+              <button onClick={clearFilters} className="rounded-full px-3.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50">
+                Xóa bộ lọc
+              </button>
+            )}
+          </div>
+
+          {/* Advanced Filters */}
+          {showAdvanced && (
+            <div className="mt-3 flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4 md:flex-row">
+              <div className="flex-1">
+                <label className="mb-1 block text-xs font-medium text-gray-500">Cấp bậc</label>
+                <select value={jobLevel} onChange={(e) => updateFilter('jobLevel', e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
+                  <option value="">Tất cả</option>
+                  {Object.entries(jobLevelLabels).map(([k, v]) => (
+                    <option key={k} value={k}>{v}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1">
+                <label className="mb-1 block text-xs font-medium text-gray-500">Lương tối thiểu (VNĐ)</label>
+                <input type="number" placeholder="VD: 5000000" value={salaryMin}
+                  onChange={(e) => updateFilter('salaryMin', e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" min={0} />
+              </div>
+              <div className="flex-1">
+                <label className="mb-1 block text-xs font-medium text-gray-500">Lương tối đa (VNĐ)</label>
+                <input type="number" placeholder="VD: 20000000" value={salaryMax}
+                  onChange={(e) => updateFilter('salaryMax', e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" min={0} />
+              </div>
+            </div>
           )}
-        </>
-      )}
+        </div>
+      </div>
+
+      {/* Results */}
+      <div className="mx-auto max-w-7xl px-4 py-6">
+        {!loading && (
+          <p className="mb-4 text-sm text-gray-500">
+            Tìm thấy <span className="font-semibold text-gray-800">{totalElements}</span> việc làm
+          </p>
+        )}
+
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+          </div>
+        ) : jobs.length === 0 ? (
+          <div className="py-16 text-center">
+            <svg className="mx-auto h-16 w-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <p className="mt-4 text-gray-500">Không tìm thấy việc làm nào phù hợp.</p>
+            {hasFilters && (
+              <button onClick={clearFilters} className="mt-2 text-sm text-blue-600 hover:underline">
+                Xóa bộ lọc và thử lại
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {jobs.map((job) => (
+                <Link key={job.id} to={`/jobs/${job.id}`}
+                  className="group rounded-xl border border-gray-100 bg-white p-5 transition hover:border-blue-200 hover:shadow-lg hover:shadow-blue-50">
+                  <div className="flex items-start gap-3">
+                    {job.employer?.logoUrl ? (
+                      <img src={job.employer.logoUrl} alt="" className="h-12 w-12 rounded-lg border object-contain" />
+                    ) : (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-50 text-lg font-bold text-blue-600">
+                        {job.employer?.companyName?.[0] ?? 'C'}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate text-base font-semibold text-gray-900 group-hover:text-blue-600">
+                        {job.title}
+                      </h3>
+                      <p className="mt-0.5 truncate text-sm text-gray-500">{job.employer?.companyName}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-1.5">
+                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
+                      {jobTypeLabels[job.jobType] ?? job.jobType}
+                    </span>
+                    {job.jobLevel && job.jobLevel !== 'ANY' && (
+                      <span className="inline-flex items-center rounded-full bg-purple-50 px-2.5 py-1 text-xs font-medium text-purple-700">
+                        {jobLevelLabels[job.jobLevel] ?? job.jobLevel}
+                      </span>
+                    )}
+                    <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2.5 py-1 text-xs text-gray-600">
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      {job.city}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between">
+                    {formatSalary(job.salaryMin, job.salaryMax) ? (
+                      <span className="text-sm font-semibold text-green-600">
+                        {formatSalary(job.salaryMin, job.salaryMax)}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-gray-400">Thỏa thuận</span>
+                    )}
+                    {job.deadline && (
+                      <span className="text-xs text-gray-400">
+                        Hạn: {new Date(job.deadline).toLocaleDateString('vi-VN')}
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-8 flex justify-center gap-1">
+                <button disabled={page === 0}
+                  onClick={() => { const p = new URLSearchParams(searchParams); p.set('page', String(page - 1)); setSearchParams(p); }}
+                  className="rounded-lg px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-100 disabled:opacity-40">
+                  Trước
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <button key={i}
+                    onClick={() => { const p = new URLSearchParams(searchParams); p.set('page', String(i)); setSearchParams(p); }}
+                    className={`min-w-[36px] rounded-lg px-3 py-2 text-sm font-medium transition ${
+                      i === page ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+                    }`}>
+                    {i + 1}
+                  </button>
+                ))}
+                <button disabled={page >= totalPages - 1}
+                  onClick={() => { const p = new URLSearchParams(searchParams); p.set('page', String(page + 1)); setSearchParams(p); }}
+                  className="rounded-lg px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-100 disabled:opacity-40">
+                  Sau
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

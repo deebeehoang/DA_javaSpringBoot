@@ -17,13 +17,19 @@ public interface JobRepository extends JpaRepository<Job, Long> {
            "OR LOWER(j.description) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
            "AND (:categoryId IS NULL OR j.category.id = :categoryId) " +
            "AND (:city IS NULL OR LOWER(j.city) = LOWER(:city)) " +
-           "AND (:jobType IS NULL OR j.jobType = :jobType)")
+           "AND (:jobType IS NULL OR j.jobType = :jobType) " +
+           "AND (:jobLevel IS NULL OR j.jobLevel = :jobLevel) " +
+           "AND (:salaryMin IS NULL OR j.salaryMax >= :salaryMin OR j.negotiable = true) " +
+           "AND (:salaryMax IS NULL OR j.salaryMin <= :salaryMax OR j.negotiable = true)")
     Page<Job> searchJobs(
             @Param("status") JobStatus status,
             @Param("keyword") String keyword,
             @Param("categoryId") Integer categoryId,
             @Param("city") String city,
             @Param("jobType") com.example.DA_WebTuyenDungViecLam.enums.JobType jobType,
+            @Param("jobLevel") com.example.DA_WebTuyenDungViecLam.enums.JobLevel jobLevel,
+            @Param("salaryMin") Long salaryMin,
+            @Param("salaryMax") Long salaryMax,
             Pageable pageable);
 
     Page<Job> findByEmployerId(Long employerId, Pageable pageable);

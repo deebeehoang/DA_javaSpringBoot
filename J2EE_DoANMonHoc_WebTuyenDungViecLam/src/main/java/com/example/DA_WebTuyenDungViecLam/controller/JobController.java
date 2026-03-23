@@ -37,10 +37,14 @@ public class JobController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer categoryId,
             @RequestParam(required = false) String city,
-            @RequestParam(required = false) String jobType) {
+            @RequestParam(required = false) String jobType,
+            @RequestParam(required = false) String jobLevel,
+            @RequestParam(required = false) Long salaryMin,
+            @RequestParam(required = false) Long salaryMax) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<JobResponse> data = jobService.getPublishedJobs(pageable, keyword, categoryId, city, jobType);
+        Page<JobResponse> data = jobService.getPublishedJobs(
+                pageable, keyword, categoryId, city, jobType, jobLevel, salaryMin, salaryMax);
         return ResponseEntity.ok(ApiResponse.success(data));
     }
 

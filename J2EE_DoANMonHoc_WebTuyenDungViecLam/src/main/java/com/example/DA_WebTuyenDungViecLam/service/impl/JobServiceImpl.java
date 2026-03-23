@@ -34,11 +34,14 @@ public class JobServiceImpl implements JobService {
     private final ApplicationRepository applicationRepository;
 
     @Override
-    public Page<JobResponse> getPublishedJobs(Pageable pageable, String keyword, Integer categoryId, String city, String jobType) {
+    public Page<JobResponse> getPublishedJobs(Pageable pageable, String keyword, Integer categoryId,
+                                               String city, String jobType, String jobLevel,
+                                               Long salaryMin, Long salaryMax) {
         JobType type = (jobType != null && !jobType.isBlank()) ? JobType.valueOf(jobType.toUpperCase()) : null;
+        JobLevel level = (jobLevel != null && !jobLevel.isBlank()) ? JobLevel.valueOf(jobLevel.toUpperCase()) : null;
 
         Page<Job> jobs = jobRepository.searchJobs(
-                JobStatus.OPEN, keyword, categoryId, city, type, pageable);
+                JobStatus.OPEN, keyword, categoryId, city, type, level, salaryMin, salaryMax, pageable);
 
         return jobs.map(this::toJobResponse);
     }

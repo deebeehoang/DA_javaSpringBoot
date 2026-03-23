@@ -19,7 +19,7 @@ export interface User {
   email: string;
   fullName: string;
   phone?: string;
-  avatar?: string;
+  avatarUrl?: string;
   role: UserRole;
   status: UserStatus;
   authProvider: AuthProvider;
@@ -172,9 +172,14 @@ export interface Skill {
 }
 
 // ──── Notification ────
+export type NotificationType = 'APPLICATION' | 'JOB_UPDATE' | 'MESSAGE' | 'SYSTEM';
+
 export interface Notification {
   id: number;
+  type: NotificationType;
+  title: string;
   message: string;
+  link: string | null;
   isRead: boolean;
   createdAt: string;
 }
@@ -199,6 +204,9 @@ export interface JobSearchParams {
   categoryId?: number;
   city?: string;
   jobType?: JobType;
+  jobLevel?: JobLevel;
+  salaryMin?: number;
+  salaryMax?: number;
   page?: number;
   size?: number;
 }
