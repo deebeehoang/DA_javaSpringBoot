@@ -172,9 +172,14 @@ export interface Skill {
 }
 
 // ──── Notification ────
+export type NotificationType = 'APPLICATION' | 'JOB_UPDATE' | 'MESSAGE' | 'SYSTEM';
+
 export interface Notification {
   id: number;
+  type: NotificationType;
+  title: string;
   message: string;
+  link: string | null;
   isRead: boolean;
   createdAt: string;
 }

@@ -31,13 +31,20 @@ export default function JobApplicationsPage() {
   }, [jobId]);
 
   const updateStatus = async (id: number, status: string) => {
+    const prev = applications.find((a) => a.id === id)?.status;
+    setApplications((list) =>
+      list.map((a) => (a.id === id ? { ...a, status: status as Application['status'] } : a)),
+    );
     try {
       await applicationService.updateStatus(id, status);
-      setApplications((prev) =>
-        prev.map((a) => (a.id === id ? { ...a, status: status as Application['status'] } : a)),
-      );
-    } catch {
-      /* ignore */
+    } catch (err) {
+      console.error('updateStatus error:', err);
+      // Revert nếu API lỗi
+      if (prev) {
+        setApplications((list) =>
+          list.map((a) => (a.id === id ? { ...a, status: prev } : a)),
+        );
+      }
     }
   };
 

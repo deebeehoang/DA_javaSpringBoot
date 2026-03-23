@@ -13,6 +13,11 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      '/api/notifications/stream': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        headers: { 'Accept': 'text/event-stream' },
+      },
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
