@@ -21,6 +21,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/jobs")
 @RequiredArgsConstructor
@@ -37,16 +39,25 @@ public class JobController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer categoryId,
             @RequestParam(required = false) String city,
-            @RequestParam(required = false) String jobType) {
+            @RequestParam(required = false) String jobType,
+            @RequestParam(required = false) String jobLevel,
+            @RequestParam(required = false) Long salaryMin,
+            @RequestParam(required = false) Long salaryMax) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<JobResponse> data = jobService.getPublishedJobs(pageable, keyword, categoryId, city, jobType);
+        Page<JobResponse> data = jobService.getPublishedJobs(
+                pageable, keyword, categoryId, city, jobType, jobLevel, salaryMin, salaryMax);
         return ResponseEntity.ok(ApiResponse.success(data));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<JobResponse>> getById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(jobService.getById(id)));
+    }
+
+    @GetMapping("/suggest")
+    public ResponseEntity<ApiResponse<List<String>>> suggest(@RequestParam String q) {
+        return ResponseEntity.ok(ApiResponse.success(jobService.suggest(q)));
     }
 
     @PostMapping

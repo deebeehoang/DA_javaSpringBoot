@@ -3,6 +3,7 @@ package com.example.DA_WebTuyenDungViecLam.controller;
 import com.example.DA_WebTuyenDungViecLam.dto.request.CandidateProfileRequest;
 import com.example.DA_WebTuyenDungViecLam.dto.response.ApiResponse;
 import com.example.DA_WebTuyenDungViecLam.dto.response.CandidateProfileResponse;
+import com.example.DA_WebTuyenDungViecLam.dto.response.JobRecommendationResponse;
 import com.example.DA_WebTuyenDungViecLam.dto.response.JobResponse;
 import com.example.DA_WebTuyenDungViecLam.entity.*;
 import com.example.DA_WebTuyenDungViecLam.entity.ids.CandidateSkillId;
@@ -11,6 +12,7 @@ import com.example.DA_WebTuyenDungViecLam.exception.ResourceNotFoundException;
 import com.example.DA_WebTuyenDungViecLam.repository.*;
 import com.example.DA_WebTuyenDungViecLam.service.CandidateService;
 import com.example.DA_WebTuyenDungViecLam.service.JobService;
+import com.example.DA_WebTuyenDungViecLam.service.AiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,6 +37,7 @@ public class CandidateController {
     private final SavedJobRepository savedJobRepository;
     private final JobRepository jobRepository;
     private final JobService jobService;
+    private final AiService aiService;
 
     // ===== Profile =====
 
@@ -192,6 +195,29 @@ public class CandidateController {
         stats.put("savedJobs", savedJobRepository.countByCandidateId(candidateId));
         stats.put("skills", apps.size());
         return ResponseEntity.ok(ApiResponse.success(stats));
+    }
+
+    // ===== AI Job Recommendations =====
+
+    @GetMapping("/recommendations")
+    public ResponseEntity<ApiResponse<List<JobRecommendationResponse>>> getRecommendations(Authentication auth) {
+        List<AiService.AiRecommendation> recs = aiService.getAiRecommendations(auth.getName());
+        List<JobRecommendationResponse> result = recs.stream()
+                .map(rec -> {
+                    try {
+                        return JobRecommendationResponse.builder()
+                                .job(jobService.getById(rec.getJobId()))
+                                .matchScore(rec.getMatchScore())
+                                .matchedSkills(rec.getMatchedSkills())
+                                .reason(rec.getReason())
+                                .build();
+                    } catch (Exception e) {
+                        return null;
+                    }
+                })
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     // ===== Helpers =====

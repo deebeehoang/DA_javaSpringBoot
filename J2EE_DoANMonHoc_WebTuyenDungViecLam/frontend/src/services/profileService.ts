@@ -15,4 +15,8 @@ export const profileService = {
 
   updateEmployerProfile: (data: EmployerProfileRequest) =>
     axiosInstance.put<ApiResponse<EmployerProfile>>('/employers/profile', data),
+
+  // Employer chart stats
+  getEmployerChartStats: () =>
+    axiosInstance.get<ApiResponse<any>>('/employers/stats/chart'),
 };

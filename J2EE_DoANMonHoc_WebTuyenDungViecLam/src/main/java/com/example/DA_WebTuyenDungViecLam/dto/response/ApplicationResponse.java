@@ -16,6 +16,9 @@ public class ApplicationResponse {
     private JobInfo job;
     private String status;
     private String coverLetter;
+    private String cvUrl;
+    private Boolean cvViewed;
+    private String cvViewedAt;
     private String appliedAt;
 
     @Data
@@ -47,6 +50,10 @@ public class ApplicationResponse {
     public static class JobInfo {
         private Long id;
         private String title;
+        private Long salaryMin;
+        private Long salaryMax;
+        private String city;
+        private String location;
         private EmployerInfo employer;
     }
 

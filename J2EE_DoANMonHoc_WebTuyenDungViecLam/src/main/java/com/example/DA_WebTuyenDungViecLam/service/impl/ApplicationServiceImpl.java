@@ -7,6 +7,7 @@ import com.example.DA_WebTuyenDungViecLam.entity.Candidate;
 import com.example.DA_WebTuyenDungViecLam.entity.Job;
 import com.example.DA_WebTuyenDungViecLam.enums.ApplicationStatus;
 import com.example.DA_WebTuyenDungViecLam.enums.JobStatus;
+import com.example.DA_WebTuyenDungViecLam.enums.NotificationType;
 import com.example.DA_WebTuyenDungViecLam.exception.DuplicateResourceException;
 import com.example.DA_WebTuyenDungViecLam.exception.ResourceNotFoundException;
 import com.example.DA_WebTuyenDungViecLam.exception.UnauthorizedException;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -52,31 +54,56 @@ public class ApplicationServiceImpl implements ApplicationService {
         app.setJob(job);
         app.setStatus(ApplicationStatus.PENDING);
         app.setCoverLetter(request.getCoverLetter());
+        // Dùng CV đính kèm hoặc CV có sẵn trong profile
+        String cvUrl = request.getCvUrl();
+        if (cvUrl == null || cvUrl.isBlank()) {
+            cvUrl = candidate.getCvUrl();
+        }
+        app.setCvUrl(cvUrl);
 
         app = applicationRepository.save(app);
 
         // Notify employer
         Long employerUserId = job.getEmployer().getUser().getId();
         String candidateName = candidate.getUser().getFullName();
-        notificationService.create(employerUserId,
-                candidateName + " đã ứng tuyển vào vị trí \"" + job.getTitle() + "\"");
+        notificationService.create(
+                employerUserId,
+                NotificationType.APPLICATION,
+                "Ứng tuyển mới",
+                candidateName + " đã ứng tuyển vào vị trí \"" + job.getTitle() + "\"",
+                "/employer/applications"
+        );
+
+        // Notify candidate (xác nhận đã ứng tuyển thành công)
+        Long candidateUserId = candidate.getUser().getId();
+        String companyName = job.getEmployer().getCompanyName();
+        notificationService.create(
+                candidateUserId,
+                NotificationType.APPLICATION,
+                "Ứng tuyển thành công",
+                "Bạn đã ứng tuyển thành công vào vị trí \"" + job.getTitle() + "\" tại " + companyName,
+                "/candidate/applications"
+        );
 
         return toResponse(app);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ApplicationResponse> getByCandidate(Long candidateId) {
         return applicationRepository.findByCandidateIdOrderByAppliedAtDesc(candidateId)
                 .stream().map(this::toResponse).toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ApplicationResponse> getByJob(Long jobId) {
         return applicationRepository.findByJobIdOrderByAppliedAtDesc(jobId)
                 .stream().map(this::toResponse).toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ApplicationResponse> getByEmployer(Long employerId) {
         return applicationRepository.findByJobEmployerIdOrderByAppliedAtDesc(employerId)
                 .stream().map(this::toResponse).toList();
@@ -92,8 +119,28 @@ public class ApplicationServiceImpl implements ApplicationService {
             throw new UnauthorizedException("Bạn không có quyền cập nhật application này");
         }
 
-        app.setStatus(ApplicationStatus.valueOf(status.toUpperCase()));
+        ApplicationStatus newStatus = ApplicationStatus.valueOf(status.toUpperCase());
+        app.setStatus(newStatus);
         app = applicationRepository.save(app);
+
+        // Notify candidate về thay đổi trạng thái
+        Long candidateUserId = app.getCandidate().getUser().getId();
+        String jobTitle = app.getJob().getTitle();
+        String companyName = app.getJob().getEmployer().getCompanyName();
+        String statusText = switch (newStatus) {
+            case APPROVED -> "được chấp nhận";
+            case REJECTED -> "bị từ chối";
+            case INTERVIEW -> "được mời phỏng vấn";
+            default -> "được cập nhật";
+        };
+        notificationService.create(
+                candidateUserId,
+                NotificationType.JOB_UPDATE,
+                "Cập nhật đơn ứng tuyển",
+                "Đơn ứng tuyển vị trí \"" + jobTitle + "\" tại " + companyName + " đã " + statusText,
+                "/candidate/applications"
+        );
+
         return toResponse(app);
     }
 
@@ -108,6 +155,45 @@ public class ApplicationServiceImpl implements ApplicationService {
         }
 
         applicationRepository.delete(app);
+    }
+
+    @Override
+    public boolean hasApplied(Long candidateId, Long jobId) {
+        return applicationRepository.existsByCandidateIdAndJobId(candidateId, jobId);
+    }
+
+    @Override
+    @Transactional
+    public ApplicationResponse markCvViewed(Long applicationId, Long employerId) {
+        Application app = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application không tồn tại"));
+
+        if (!app.getJob().getEmployer().getId().equals(employerId)) {
+            throw new UnauthorizedException("Bạn không có quyền xem đơn này");
+        }
+
+        if (!Boolean.TRUE.equals(app.getCvViewed())) {
+            app.setCvViewed(true);
+            app.setCvViewedAt(LocalDateTime.now());
+            if (app.getStatus() == ApplicationStatus.PENDING) {
+                app.setStatus(ApplicationStatus.VIEWED);
+            }
+            app = applicationRepository.save(app);
+
+            // Notify candidate: NTD đã xem CV
+            Long candidateUserId = app.getCandidate().getUser().getId();
+            String companyName = app.getJob().getEmployer().getCompanyName();
+            String jobTitle = app.getJob().getTitle();
+            notificationService.create(
+                    candidateUserId,
+                    NotificationType.APPLICATION,
+                    "CV đã được xem",
+                    companyName + " đã xem CV của bạn cho vị trí \"" + jobTitle + "\"",
+                    "/candidate/dashboard"
+            );
+        }
+
+        return toResponse(app);
     }
 
     private ApplicationResponse toResponse(Application app) {
@@ -128,6 +214,10 @@ public class ApplicationServiceImpl implements ApplicationService {
                 .job(ApplicationResponse.JobInfo.builder()
                         .id(app.getJob().getId())
                         .title(app.getJob().getTitle())
+                        .salaryMin(app.getJob().getSalaryMin())
+                        .salaryMax(app.getJob().getSalaryMax())
+                        .city(app.getJob().getCity())
+                        .location(app.getJob().getLocation())
                         .employer(ApplicationResponse.EmployerInfo.builder()
                                 .id(app.getJob().getEmployer().getId())
                                 .companyName(app.getJob().getEmployer().getCompanyName())
@@ -136,6 +226,9 @@ public class ApplicationServiceImpl implements ApplicationService {
                         .build())
                 .status(app.getStatus().name())
                 .coverLetter(app.getCoverLetter())
+                .cvUrl(app.getCvUrl())
+                .cvViewed(app.getCvViewed())
+                .cvViewedAt(app.getCvViewedAt() != null ? app.getCvViewedAt().toString() : null)
                 .appliedAt(app.getAppliedAt() != null ? app.getAppliedAt().toString() : null)
                 .build();
     }

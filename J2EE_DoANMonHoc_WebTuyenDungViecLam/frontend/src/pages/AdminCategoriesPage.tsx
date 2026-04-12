@@ -4,6 +4,8 @@ import { adminService } from '@/services/adminService';
 import type { Category } from '@/types';
 import type { CategoryRequest } from '@/services/adminService';
 
+const inputCls = "w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500";
+
 function emptyForm(): CategoryRequest {
   return { name: '', slug: '', icon: '', description: '' };
 }
@@ -61,137 +63,100 @@ export default function AdminCategoriesPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Bạn có chắc muốn xóa danh mục này?')) return;
+    if (!globalThis.confirm('Bạn có chắc muốn xóa danh mục này?')) return;
     await adminService.deleteCategory(id);
     setCategories((prev) => prev.filter((c) => c.id !== id));
     if (editId === id) resetForm();
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <Link to="/admin/dashboard" className="text-sm text-blue-600 hover:underline">
-        ← Bảng điều khiển
-      </Link>
-      <h1 className="mt-1 text-2xl font-bold text-gray-800">Quản lý danh mục</h1>
+    <div className="min-h-screen bg-gray-50">
+      <div className="mx-auto max-w-5xl px-4 py-8">
+        <Link to="/admin/dashboard" className="inline-flex items-center gap-1 text-sm text-gray-500 transition hover:text-blue-600">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+          Bảng điều khiển
+        </Link>
+        <h1 className="mt-2 text-2xl font-bold text-gray-900">Quản lý danh mục</h1>
 
-      {/* Form */}
-      <div className="mt-6 rounded-lg border bg-white p-5">
-        <h2 className="font-semibold text-gray-700">
-          {editId ? 'Chỉnh sửa danh mục' : 'Thêm danh mục mới'}
-        </h2>
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <input
-            placeholder="Tên danh mục *"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="rounded border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-          />
-          <input
-            placeholder="Slug *"
-            value={form.slug}
-            onChange={(e) => setForm({ ...form, slug: e.target.value })}
-            className="rounded border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-          />
-          <input
-            placeholder="Icon (emoji hoặc icon class)"
-            value={form.icon}
-            onChange={(e) => setForm({ ...form, icon: e.target.value })}
-            className="rounded border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-          />
-          <input
-            placeholder="Mô tả"
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="rounded border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-          />
-        </div>
-        <div className="mt-3 flex gap-2">
-          <button
-            onClick={handleSave}
-            disabled={saving || !form.name.trim() || !form.slug.trim()}
-            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {saving ? 'Đang lưu...' : editId ? 'Cập nhật' : 'Thêm'}
-          </button>
-          {editId && (
-            <button
-              onClick={resetForm}
-              className="rounded border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
-            >
-              Hủy
+        {/* Form */}
+        <div className="mt-6 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+          <h2 className="flex items-center gap-2 font-semibold text-gray-900">
+            <svg className="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d={editId ? "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" : "M12 4v16m8-8H4"} /></svg>
+            {editId ? 'Chỉnh sửa danh mục' : 'Thêm danh mục mới'}
+          </h2>
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <input placeholder="Tên danh mục *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} />
+            <input placeholder="Slug *" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className={inputCls} />
+            <input placeholder="Icon (emoji)" value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })} className={inputCls} />
+            <input placeholder="Mô tả" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputCls} />
+          </div>
+          <div className="mt-4 flex gap-2">
+            <button onClick={handleSave} disabled={saving || !form.name.trim() || !form.slug.trim()}
+              className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 disabled:opacity-50">
+              {saving ? 'Đang lưu...' : editId ? 'Cập nhật' : 'Thêm'}
             </button>
-          )}
+            {editId && (
+              <button onClick={resetForm} className="rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50">
+                Hủy
+              </button>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* List */}
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-        </div>
-      ) : categories.length === 0 ? (
-        <p className="mt-8 text-center text-gray-500">Chưa có danh mục nào.</p>
-      ) : (
-        <div className="mt-6 overflow-x-auto rounded-lg border bg-white">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-gray-50 text-left text-gray-600">
-              <tr>
-                <th className="px-4 py-3">ID</th>
-                <th className="px-4 py-3">Icon</th>
-                <th className="px-4 py-3">Tên</th>
-                <th className="px-4 py-3">Slug</th>
-                <th className="px-4 py-3">Mô tả</th>
-                <th className="px-4 py-3">Trạng thái</th>
-                <th className="px-4 py-3">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {categories.map((cat) => (
-                <tr key={cat.id} className="border-b last:border-0 hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-500">{cat.id}</td>
-                  <td className="px-4 py-3 text-xl">{cat.icon ?? '—'}</td>
-                  <td className="px-4 py-3 font-medium">{cat.name}</td>
-                  <td className="px-4 py-3 text-gray-500">{cat.slug}</td>
-                  <td className="max-w-[200px] truncate px-4 py-3 text-gray-500">{cat.description ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        cat.active !== false
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      {cat.active !== false ? 'Hiển thị' : 'Ẩn'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1">
-                      <button
-                        onClick={() => startEdit(cat)}
-                        className="rounded bg-blue-50 px-2 py-1 text-xs text-blue-600 hover:bg-blue-100"
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        onClick={() => handleToggle(cat.id)}
-                        className="rounded bg-yellow-50 px-2 py-1 text-xs text-yellow-700 hover:bg-yellow-100"
-                      >
-                        {cat.active !== false ? 'Ẩn' : 'Hiện'}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(cat.id)}
-                        className="rounded bg-red-50 px-2 py-1 text-xs text-red-600 hover:bg-red-100"
-                      >
-                        Xóa
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        {/* List */}
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="mt-8 rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center">
+            <p className="text-gray-500">Chưa có danh mục nào.</p>
+          </div>
+        ) : (
+          <div className="mt-6 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b border-gray-100 bg-gray-50/50">
+                  <tr>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">ID</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Icon</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Tên</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Slug</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Trạng thái</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {categories.map((cat) => (
+                    <tr key={cat.id} className="transition hover:bg-gray-50/50">
+                      <td className="px-5 py-3.5 text-gray-500">{cat.id}</td>
+                      <td className="px-5 py-3.5 text-xl">{cat.icon ?? '—'}</td>
+                      <td className="px-5 py-3.5 font-medium text-gray-900">{cat.name}</td>
+                      <td className="px-5 py-3.5 text-gray-500">{cat.slug}</td>
+                      <td className="px-5 py-3.5">
+                        <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
+                          cat.active !== false ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-600 border-gray-200'
+                        }`}>
+                          {cat.active !== false ? 'Hiển thị' : 'Ẩn'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex gap-1.5">
+                          <button onClick={() => startEdit(cat)} className="rounded-lg border border-blue-200 px-2.5 py-1 text-xs font-medium text-blue-600 transition hover:bg-blue-50">Sửa</button>
+                          <button onClick={() => handleToggle(cat.id)} className="rounded-lg border border-yellow-200 px-2.5 py-1 text-xs font-medium text-yellow-700 transition hover:bg-yellow-50">
+                            {cat.active !== false ? 'Ẩn' : 'Hiện'}
+                          </button>
+                          <button onClick={() => handleDelete(cat.id)} className="rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50">Xóa</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

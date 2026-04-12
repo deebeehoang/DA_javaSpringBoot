@@ -31,4 +31,7 @@ export const jobService = {
 
   updateMyJobStatus: (id: number, status: string) =>
     axiosInstance.patch<ApiResponse<Job>>(`/jobs/my/${id}/status`, { status }),
+
+  suggest: (q: string) =>
+    axiosInstance.get<ApiResponse<string[]>>('/jobs/suggest', { params: { q } }),
 };

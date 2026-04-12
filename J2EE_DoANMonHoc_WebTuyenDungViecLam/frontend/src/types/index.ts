@@ -7,7 +7,7 @@ export type EducationLevel = 'HIGH_SCHOOL' | 'DIPLOMA' | 'BACHELOR' | 'MASTER' |
 export type JobType = 'FULL_TIME' | 'PART_TIME' | 'FREELANCE' | 'INTERNSHIP';
 export type JobLevel = 'INTERN' | 'FRESHER' | 'JUNIOR' | 'SENIOR' | 'MANAGER' | 'ANY';
 export type JobStatus = 'DRAFT' | 'OPEN' | 'CLOSED' | 'EXPIRED';
-export type ApplicationStatus = 'PENDING' | 'INTERVIEW' | 'APPROVED' | 'REJECTED';
+export type ApplicationStatus = 'PENDING' | 'VIEWED' | 'INTERVIEW' | 'APPROVED' | 'REJECTED';
 export type CompanyType = 'COMPANY' | 'INDIVIDUAL';
 export type CompanySize = '_1_10' | '_11_50' | '_51_200' | '_201_500' | '_500_PLUS';
 export type SkillCategory = 'TECHNICAL' | 'SOFT_SKILL' | 'LANGUAGE' | 'OTHER';
@@ -19,7 +19,7 @@ export interface User {
   email: string;
   fullName: string;
   phone?: string;
-  avatar?: string;
+  avatarUrl?: string;
   role: UserRole;
   status: UserStatus;
   authProvider: AuthProvider;
@@ -99,6 +99,8 @@ export interface Job {
   salaryMax?: number;
   location?: string;
   city?: string;
+  latitude?: number;
+  longitude?: number;
   positions: number;
   deadline?: string;
   views: number;
@@ -121,6 +123,8 @@ export interface JobCreateRequest {
   salaryMax?: number | '';
   location: string;
   city: string;
+  latitude?: number;
+  longitude?: number;
   positions: number;
   deadline?: string;
 }
@@ -143,6 +147,10 @@ export interface ApplicationCandidate {
 export interface ApplicationJob {
   id: number;
   title: string;
+  salaryMin?: number;
+  salaryMax?: number;
+  city?: string;
+  location?: string;
   employer: {
     id: number;
     companyName: string;
@@ -156,12 +164,16 @@ export interface Application {
   job: ApplicationJob;
   status: ApplicationStatus;
   coverLetter?: string;
+  cvUrl?: string;
+  cvViewed?: boolean;
+  cvViewedAt?: string;
   appliedAt: string;
 }
 
 export interface ApplicationRequest {
   jobId: number;
   coverLetter?: string;
+  cvUrl?: string;
 }
 
 // ──── Skill ────
@@ -171,10 +183,23 @@ export interface Skill {
   category: SkillCategory;
 }
 
+// ──── Job Recommendation ────
+export interface JobRecommendation {
+  job: Job;
+  matchScore: number;
+  matchedSkills: string[];
+  reason: string;
+}
+
 // ──── Notification ────
+export type NotificationType = 'APPLICATION' | 'JOB_UPDATE' | 'MESSAGE' | 'SYSTEM';
+
 export interface Notification {
   id: number;
+  type: NotificationType;
+  title: string;
   message: string;
+  link: string | null;
   isRead: boolean;
   createdAt: string;
 }
@@ -199,6 +224,9 @@ export interface JobSearchParams {
   categoryId?: number;
   city?: string;
   jobType?: JobType;
+  jobLevel?: JobLevel;
+  salaryMin?: number;
+  salaryMax?: number;
   page?: number;
   size?: number;
 }
@@ -259,4 +287,50 @@ export interface EmployerProfileRequest {
   city?: string;
   logoUrl?: string;
   industry?: string;
+}
+
+// ──── Review ────
+export interface ReviewCandidateInfo {
+  id: number;
+  fullName: string;
+  avatarUrl?: string;
+}
+
+export interface ReviewJobInfo {
+  id: number;
+  title: string;
+}
+
+export interface Review {
+  id: number;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+  candidate: ReviewCandidateInfo;
+  job: ReviewJobInfo;
+}
+
+export interface ReviewRequest {
+  jobId: number;
+  rating: number;
+  comment?: string;
+}
+
+export interface EmployerRating {
+  employerId: number;
+  companyName: string;
+  averageRating: number;
+  totalReviews: number;
+}
+
+// ──── Change Password ────
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+// ──── Chart ────
+export interface MonthlyCount {
+  month: string;
+  count: number;
 }

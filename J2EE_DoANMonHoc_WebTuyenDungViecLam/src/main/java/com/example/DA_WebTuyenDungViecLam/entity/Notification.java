@@ -1,5 +1,6 @@
 package com.example.DA_WebTuyenDungViecLam.entity;
 
+import com.example.DA_WebTuyenDungViecLam.enums.NotificationType;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -21,8 +22,19 @@ public class Notification {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "enum('APPLICATION','JOB_UPDATE','MESSAGE','SYSTEM')")
+    @Builder.Default
+    private NotificationType type = NotificationType.SYSTEM;
+
+    @Column(nullable = false, length = 255)
+    private String title;
+
     @Column(nullable = false, length = 255)
     private String message;
+
+    @Column(length = 500)
+    private String link;
 
     @Column(name = "is_read")
     @Builder.Default

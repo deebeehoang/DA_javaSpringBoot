@@ -20,9 +20,12 @@ import com.example.DA_WebTuyenDungViecLam.repository.JobRepository;
 import com.example.DA_WebTuyenDungViecLam.service.JobService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -34,11 +37,14 @@ public class JobServiceImpl implements JobService {
     private final ApplicationRepository applicationRepository;
 
     @Override
-    public Page<JobResponse> getPublishedJobs(Pageable pageable, String keyword, Integer categoryId, String city, String jobType) {
+    public Page<JobResponse> getPublishedJobs(Pageable pageable, String keyword, Integer categoryId,
+                                               String city, String jobType, String jobLevel,
+                                               Long salaryMin, Long salaryMax) {
         JobType type = (jobType != null && !jobType.isBlank()) ? JobType.valueOf(jobType.toUpperCase()) : null;
+        JobLevel level = (jobLevel != null && !jobLevel.isBlank()) ? JobLevel.valueOf(jobLevel.toUpperCase()) : null;
 
         Page<Job> jobs = jobRepository.searchJobs(
-                JobStatus.OPEN, keyword, categoryId, city, type, pageable);
+                JobStatus.OPEN, keyword, categoryId, city, type, level, salaryMin, salaryMax, pageable);
 
         return jobs.map(this::toJobResponse);
     }
@@ -75,6 +81,8 @@ public class JobServiceImpl implements JobService {
                 .negotiable(req.getNegotiable() != null ? req.getNegotiable() : false)
                 .location(req.getLocation())
                 .city(req.getCity())
+                .latitude(req.getLatitude())
+                .longitude(req.getLongitude())
                 .positions(req.getPositions() != null ? req.getPositions() : 1)
                 .deadline(req.getDeadline())
                 .employer(employer)
@@ -107,6 +115,8 @@ public class JobServiceImpl implements JobService {
         if (req.getNegotiable() != null) job.setNegotiable(req.getNegotiable());
         if (req.getLocation() != null) job.setLocation(req.getLocation());
         if (req.getCity() != null) job.setCity(req.getCity());
+        if (req.getLatitude() != null) job.setLatitude(req.getLatitude());
+        if (req.getLongitude() != null) job.setLongitude(req.getLongitude());
         if (req.getPositions() != null) job.setPositions(req.getPositions());
         if (req.getDeadline() != null) job.setDeadline(req.getDeadline());
         if (req.getCategoryId() != null) {
@@ -165,6 +175,12 @@ public class JobServiceImpl implements JobService {
 
     // ===== Mapper =====
 
+    @Override
+    public List<String> suggest(String q) {
+        if (q == null || q.isBlank()) return List.of();
+        return jobRepository.suggestTitles(q, PageRequest.of(0, 10));
+    }
+
     private JobResponse toJobResponse(Job job) {
         JobResponse.JobResponseBuilder builder = JobResponse.builder()
                 .id(job.getId())
@@ -180,6 +196,8 @@ public class JobServiceImpl implements JobService {
                 .negotiable(job.getNegotiable())
                 .location(job.getLocation())
                 .city(job.getCity())
+                .latitude(job.getLatitude())
+                .longitude(job.getLongitude())
                 .positions(job.getPositions())
                 .deadline(job.getDeadline() != null ? job.getDeadline().toString() : null)
                 .views(job.getViews())

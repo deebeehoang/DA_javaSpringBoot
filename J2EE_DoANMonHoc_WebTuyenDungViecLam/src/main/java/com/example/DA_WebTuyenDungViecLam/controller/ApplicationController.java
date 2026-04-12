@@ -46,6 +46,15 @@ public class ApplicationController {
         return ResponseEntity.ok(ApiResponse.success(applicationService.getByCandidate(candidateId)));
     }
 
+    @GetMapping("/check/{jobId}")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public ResponseEntity<ApiResponse<Boolean>> checkApplied(
+            @PathVariable Long jobId,
+            Authentication authentication) {
+        Long candidateId = getCandidateId(authentication);
+        return ResponseEntity.ok(ApiResponse.success(applicationService.hasApplied(candidateId, jobId)));
+    }
+
     @GetMapping("/job/{jobId}")
     @PreAuthorize("hasRole('EMPLOYER')")
     public ResponseEntity<ApiResponse<List<ApplicationResponse>>> byJob(
@@ -70,6 +79,17 @@ public class ApplicationController {
         Long employerId = getEmployerId(authentication);
         return ResponseEntity.ok(
                 ApiResponse.success(applicationService.updateStatus(id, request.getStatus(), employerId)));
+    }
+
+    @PatchMapping("/{id}/view")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<ApiResponse<ApplicationResponse>> markCvViewed(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        Long employerId = getEmployerId(authentication);
+        return ResponseEntity.ok(
+                ApiResponse.success(applicationService.markCvViewed(id, employerId), "Đã đánh dấu CV đã xem"));
     }
 
     @DeleteMapping("/{id}")

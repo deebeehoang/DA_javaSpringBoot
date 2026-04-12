@@ -58,4 +58,21 @@ export const adminService = {
 
   deleteCategory: (id: number) =>
     axiosInstance.delete<ApiResponse<void>>(`/admin/categories/${id}`),
+
+  // Skills
+  getSkills: (category?: string) =>
+    axiosInstance.get<ApiResponse<any[]>>('/admin/skills', { params: { category: category || undefined } }),
+
+  createSkill: (data: { name: string; category?: string }) =>
+    axiosInstance.post<ApiResponse<any>>('/admin/skills', data),
+
+  updateSkill: (id: number, data: { name: string; category?: string }) =>
+    axiosInstance.put<ApiResponse<any>>(`/admin/skills/${id}`, data),
+
+  deleteSkill: (id: number) =>
+    axiosInstance.delete<ApiResponse<void>>(`/admin/skills/${id}`),
+
+  // Chart stats
+  getChartStats: () =>
+    axiosInstance.get<ApiResponse<any>>('/admin/stats/chart'),
 };

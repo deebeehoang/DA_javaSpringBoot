@@ -1,5 +1,5 @@
 import axiosInstance from './axiosInstance';
-import type { ApiResponse, Job } from '@/types';
+import type { ApiResponse, Job, JobRecommendation } from '@/types';
 
 export interface CandidateSkill {
   skillId: number;
@@ -56,4 +56,8 @@ export const candidateService = {
   // Stats
   getStats: () =>
     axiosInstance.get<ApiResponse<CandidateStats>>('/candidates/stats'),
+
+  // AI Recommendations
+  getRecommendations: () =>
+    axiosInstance.get<ApiResponse<JobRecommendation[]>>('/candidates/recommendations'),
 };

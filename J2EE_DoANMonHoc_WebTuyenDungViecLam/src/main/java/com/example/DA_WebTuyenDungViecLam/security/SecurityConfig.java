@@ -39,7 +39,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/jobs", "/api/jobs/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/reviews/employer/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/mapbox/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/notifications/stream").permitAll()
+                .requestMatchers("/uploads/**").permitAll()
                 // Admin
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // Authenticated

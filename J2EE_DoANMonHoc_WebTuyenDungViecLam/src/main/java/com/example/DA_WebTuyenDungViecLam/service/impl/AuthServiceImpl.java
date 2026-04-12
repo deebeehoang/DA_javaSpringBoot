@@ -1,5 +1,6 @@
 package com.example.DA_WebTuyenDungViecLam.service.impl;
 
+import com.example.DA_WebTuyenDungViecLam.dto.request.ChangePasswordRequest;
 import com.example.DA_WebTuyenDungViecLam.dto.request.LoginRequest;
 import com.example.DA_WebTuyenDungViecLam.dto.request.RegisterRequest;
 import com.example.DA_WebTuyenDungViecLam.dto.response.AuthResponse;
@@ -102,6 +103,19 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException("User không tồn tại"));
 
         return toUserResponse(user);
+    }
+
+    @Override
+    public void changePassword(String email, ChangePasswordRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User không tồn tại"));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new UnauthorizedException("Mật khẩu hiện tại không chính xác");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 
     private UserResponse toUserResponse(User user) {

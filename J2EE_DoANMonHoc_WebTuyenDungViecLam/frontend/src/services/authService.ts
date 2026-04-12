@@ -1,5 +1,5 @@
 import axiosInstance from './axiosInstance';
-import type { ApiResponse, AuthResponse, LoginRequest, RegisterRequest, User } from '@/types';
+import type { ApiResponse, AuthResponse, ChangePasswordRequest, LoginRequest, RegisterRequest, User } from '@/types';
 
 export const authService = {
   login: (data: LoginRequest) =>
@@ -10,4 +10,7 @@ export const authService = {
 
   me: () =>
     axiosInstance.get<ApiResponse<User>>('/auth/me'),
+
+  changePassword: (data: ChangePasswordRequest) =>
+    axiosInstance.put<ApiResponse<string>>('/auth/change-password', data),
 };

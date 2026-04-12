@@ -1,6 +1,7 @@
 package com.example.DA_WebTuyenDungViecLam.controller;
 
 import com.example.DA_WebTuyenDungViecLam.dto.request.CategoryRequest;
+import com.example.DA_WebTuyenDungViecLam.dto.request.SkillRequest;
 import com.example.DA_WebTuyenDungViecLam.dto.request.StatusUpdateRequest;
 import com.example.DA_WebTuyenDungViecLam.dto.response.ApiResponse;
 import com.example.DA_WebTuyenDungViecLam.dto.response.CategoryResponse;
@@ -8,14 +9,17 @@ import com.example.DA_WebTuyenDungViecLam.dto.response.DashboardStatsResponse;
 import com.example.DA_WebTuyenDungViecLam.dto.response.JobResponse;
 import com.example.DA_WebTuyenDungViecLam.dto.response.UserResponse;
 import com.example.DA_WebTuyenDungViecLam.entity.Category;
+import com.example.DA_WebTuyenDungViecLam.entity.Skill;
 import com.example.DA_WebTuyenDungViecLam.entity.User;
 import com.example.DA_WebTuyenDungViecLam.enums.JobStatus;
+import com.example.DA_WebTuyenDungViecLam.enums.SkillCategory;
 import com.example.DA_WebTuyenDungViecLam.enums.UserRole;
 import com.example.DA_WebTuyenDungViecLam.enums.UserStatus;
 import com.example.DA_WebTuyenDungViecLam.exception.ResourceNotFoundException;
 import com.example.DA_WebTuyenDungViecLam.repository.ApplicationRepository;
 import com.example.DA_WebTuyenDungViecLam.repository.CategoryRepository;
 import com.example.DA_WebTuyenDungViecLam.repository.JobRepository;
+import com.example.DA_WebTuyenDungViecLam.repository.SkillRepository;
 import com.example.DA_WebTuyenDungViecLam.repository.UserRepository;
 import com.example.DA_WebTuyenDungViecLam.service.JobService;
 import jakarta.validation.Valid;
@@ -28,7 +32,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -40,6 +47,7 @@ public class AdminController {
     private final JobRepository jobRepository;
     private final ApplicationRepository applicationRepository;
     private final CategoryRepository categoryRepository;
+    private final SkillRepository skillRepository;
     private final JobService jobService;
 
     // ==================== DASHBOARD STATS ====================
@@ -220,5 +228,95 @@ public class AdminController {
                 .description(c.getDescription())
                 .active(c.getActive())
                 .build();
+    }
+
+    // ==================== SKILL MANAGEMENT ====================
+
+    @GetMapping("/skills")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getAllSkills(
+            @RequestParam(required = false) String category) {
+        List<Skill> skills;
+        if (category != null && !category.isBlank()) {
+            skills = skillRepository.findByCategory(SkillCategory.valueOf(category.toUpperCase()));
+        } else {
+            skills = skillRepository.findAll(Sort.by("id"));
+        }
+        List<Map<String, Object>> list = skills.stream().map(s -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", s.getId());
+            m.put("name", s.getName());
+            m.put("category", s.getCategory().name());
+            m.put("createdAt", s.getCreatedAt() != null ? s.getCreatedAt().toString() : null);
+            return m;
+        }).toList();
+        return ResponseEntity.ok(ApiResponse.success(list));
+    }
+
+    @PostMapping("/skills")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createSkill(
+            @Valid @RequestBody SkillRequest request) {
+        if (skillRepository.findByName(request.getName()).isPresent()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("K\u1ef9 n\u0103ng \u0111\u00e3 t\u1ed3n t\u1ea1i"));
+        }
+        Skill skill = Skill.builder()
+                .name(request.getName())
+                .category(request.getCategory() != null
+                        ? SkillCategory.valueOf(request.getCategory().toUpperCase())
+                        : SkillCategory.OTHER)
+                .build();
+        skill = skillRepository.save(skill);
+        Map<String, Object> m = new HashMap<>();
+        m.put("id", skill.getId());
+        m.put("name", skill.getName());
+        m.put("category", skill.getCategory().name());
+        return ResponseEntity.ok(ApiResponse.success(m, "T\u1ea1o k\u1ef9 n\u0103ng th\u00e0nh c\u00f4ng"));
+    }
+
+    @PutMapping("/skills/{id}")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> updateSkill(
+            @PathVariable Integer id,
+            @Valid @RequestBody SkillRequest request) {
+        Skill skill = skillRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("K\u1ef9 n\u0103ng kh\u00f4ng t\u1ed3n t\u1ea1i"));
+        skill.setName(request.getName());
+        if (request.getCategory() != null) {
+            skill.setCategory(SkillCategory.valueOf(request.getCategory().toUpperCase()));
+        }
+        skill = skillRepository.save(skill);
+        Map<String, Object> m = new HashMap<>();
+        m.put("id", skill.getId());
+        m.put("name", skill.getName());
+        m.put("category", skill.getCategory().name());
+        return ResponseEntity.ok(ApiResponse.success(m));
+    }
+
+    @DeleteMapping("/skills/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteSkill(@PathVariable Integer id) {
+        Skill skill = skillRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("K\u1ef9 n\u0103ng kh\u00f4ng t\u1ed3n t\u1ea1i"));
+        skillRepository.delete(skill);
+        return ResponseEntity.ok(ApiResponse.success(null, "X\u00f3a k\u1ef9 n\u0103ng th\u00e0nh c\u00f4ng"));
+    }
+
+    // ==================== CHART STATS ====================
+
+    @GetMapping("/stats/chart")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getChartStats() {
+        LocalDateTime since = LocalDateTime.now().minusMonths(6);
+
+        Map<String, Object> chart = new HashMap<>();
+        chart.put("jobsByMonth", toMonthlyList(jobRepository.countByMonth(since)));
+        chart.put("applicationsByMonth", toMonthlyList(applicationRepository.countByMonth(since)));
+        chart.put("usersByMonth", toMonthlyList(userRepository.countByMonth(since)));
+        return ResponseEntity.ok(ApiResponse.success(chart));
+    }
+
+    private List<Map<String, Object>> toMonthlyList(List<Object[]> rows) {
+        return rows.stream().map(r -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("month", r[0]);
+            m.put("count", ((Number) r[1]).longValue());
+            return m;
+        }).toList();
     }
 }
