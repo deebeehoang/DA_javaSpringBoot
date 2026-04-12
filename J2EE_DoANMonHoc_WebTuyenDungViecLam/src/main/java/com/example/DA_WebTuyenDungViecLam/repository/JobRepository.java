@@ -8,6 +8,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 public interface JobRepository extends JpaRepository<Job, Long> {
 
     Page<Job> findByStatus(JobStatus status, Pageable pageable);
@@ -32,7 +35,25 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             @Param("salaryMax") Long salaryMax,
             Pageable pageable);
 
+    @Query("SELECT DISTINCT j.title FROM Job j WHERE j.status = 'OPEN' " +
+           "AND LOWER(j.title) LIKE LOWER(CONCAT('%', :q, '%')) " +
+           "ORDER BY j.title")
+    List<String> suggestTitles(@Param("q") String q, Pageable pageable);
+
     Page<Job> findByEmployerId(Long employerId, Pageable pageable);
 
     long countByStatus(JobStatus status);
+
+    long countByEmployerId(Long employerId);
+
+    @Query(value = "SELECT DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as cnt " +
+           "FROM jobs WHERE created_at >= :since GROUP BY DATE_FORMAT(created_at, '%Y-%m') ORDER BY month",
+           nativeQuery = true)
+    List<Object[]> countByMonth(@Param("since") LocalDateTime since);
+
+    @Query(value = "SELECT DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as cnt " +
+           "FROM jobs WHERE employer_id = :employerId AND created_at >= :since " +
+           "GROUP BY DATE_FORMAT(created_at, '%Y-%m') ORDER BY month",
+           nativeQuery = true)
+    List<Object[]> countByEmployerIdAndMonth(@Param("employerId") Long employerId, @Param("since") LocalDateTime since);
 }

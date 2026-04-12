@@ -16,4 +16,6 @@ public class ApplicationRequest {
     private Long jobId;
 
     private String coverLetter;
+
+    private String cvUrl;
 }

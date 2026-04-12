@@ -3,19 +3,8 @@ import { useEffect, useState } from 'react';
 import { jobService } from '@/services/jobService';
 import { categoryService } from '@/services/categoryService';
 import { locationService, type Province } from '@/services/locationService';
+import JobCard from '@/components/JobCard';
 import type { Job, Category } from '@/types';
-
-const jobTypeLabels: Record<string, string> = {
-  FULL_TIME: 'Full-time', PART_TIME: 'Part-time', INTERNSHIP: 'Thực tập', FREELANCE: 'Freelance',
-};
-
-const formatSalary = (min?: number, max?: number) => {
-  if (!min && !max) return null;
-  const fmt = (n: number) => n >= 1000000 ? (n / 1000000).toFixed(0) + ' triệu' : n.toLocaleString();
-  if (min && max) return `${fmt(min)} - ${fmt(max)}`;
-  if (min) return `Từ ${fmt(min)}`;
-  return `Đến ${fmt(max!)}`;
-};
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -129,39 +118,7 @@ export default function HomePage() {
             </div>
             <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {featuredJobs.map((job) => (
-                <Link key={job.id} to={`/jobs/${job.id}`}
-                  className="group rounded-xl border border-gray-100 bg-white p-5 transition hover:border-blue-200 hover:shadow-lg hover:shadow-blue-50">
-                  <div className="flex items-start gap-3">
-                    {job.employer?.logoUrl ? (
-                      <img src={job.employer.logoUrl} alt="" className="h-12 w-12 rounded-lg border object-contain" />
-                    ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-50 text-lg font-bold text-blue-600">
-                        {job.employer?.companyName?.[0] ?? 'C'}
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <h3 className="truncate text-base font-semibold text-gray-900 group-hover:text-blue-600">{job.title}</h3>
-                      <p className="mt-0.5 truncate text-sm text-gray-500">{job.employer?.companyName}</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-1.5">
-                    <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
-                      {jobTypeLabels[job.jobType] ?? job.jobType}
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2.5 py-1 text-xs text-gray-600">
-                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      {job.city}
-                    </span>
-                    {formatSalary(job.salaryMin, job.salaryMax) && (
-                      <span className="rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
-                        {formatSalary(job.salaryMin, job.salaryMax)}
-                      </span>
-                    )}
-                  </div>
-                </Link>
+                <JobCard key={job.id} job={job} />
               ))}
             </div>
             <div className="mt-10 text-center">

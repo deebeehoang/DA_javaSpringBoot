@@ -18,4 +18,8 @@ public interface ApplicationService {
     ApplicationResponse updateStatus(Long applicationId, String status, Long employerId);
 
     void withdraw(Long applicationId, Long candidateId);
+
+    boolean hasApplied(Long candidateId, Long jobId);
+
+    ApplicationResponse markCvViewed(Long applicationId, Long employerId);
 }

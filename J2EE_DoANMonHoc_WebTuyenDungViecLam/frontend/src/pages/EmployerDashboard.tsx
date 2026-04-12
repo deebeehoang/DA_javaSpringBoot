@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { jobService } from '@/services/jobService';
-import type { Job } from '@/types';
+import { profileService } from '@/services/profileService';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import type { Job, MonthlyCount } from '@/types';
 
 const statusLabel: Record<string, string> = {
   DRAFT: 'Nháp',
@@ -27,6 +29,7 @@ const jobTypeLabel: Record<string, string> = {
 export default function EmployerDashboard() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chartData, setChartData] = useState<{ applicationsByMonth: MonthlyCount[]; jobsByMonth: MonthlyCount[] } | null>(null);
   const navigate = useNavigate();
 
   const fetchJobs = () => {
@@ -40,7 +43,10 @@ export default function EmployerDashboard() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchJobs(); }, []);
+  useEffect(() => {
+    fetchJobs();
+    profileService.getEmployerChartStats().then((res) => setChartData(res.data.data ?? null)).catch(() => {});
+  }, []);
 
   const handleStatusChange = async (jobId: number, status: string) => {
     try {
@@ -108,6 +114,36 @@ export default function EmployerDashboard() {
             Hồ sơ công ty
           </Link>
         </div>
+
+        {/* Charts */}
+        {chartData && (() => {
+          const months = new Set<string>();
+          chartData.jobsByMonth.forEach(d => months.add(d.month));
+          chartData.applicationsByMonth.forEach(d => months.add(d.month));
+          const data = Array.from(months).sort().map(m => ({
+            month: m,
+            'Tin tuyển dụng': chartData.jobsByMonth.find(d => d.month === m)?.count ?? 0,
+            'Đơn ứng tuyển': chartData.applicationsByMonth.find(d => d.month === m)?.count ?? 0,
+          }));
+          return (
+            <div className="mt-6 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-bold text-gray-900">Thống kê 6 tháng gần đây</h2>
+              <div className="mt-4 h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="Tin tuyển dụng" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Đơn ứng tuyển" fill="#ec4899" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Job list */}
         <div className="mt-8">

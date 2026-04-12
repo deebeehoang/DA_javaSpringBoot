@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { adminService, type DashboardStats } from '@/services/adminService';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import type { MonthlyCount } from '@/types';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [chartData, setChartData] = useState<{ jobsByMonth: MonthlyCount[]; applicationsByMonth: MonthlyCount[]; usersByMonth: MonthlyCount[] } | null>(null);
 
   useEffect(() => {
     adminService
       .getStats()
       .then((res) => setStats(res.data.data!))
       .finally(() => setLoading(false));
+    adminService.getChartStats().then((res) => setChartData(res.data.data ?? null)).catch(() => {});
   }, []);
 
   if (loading) {
@@ -66,6 +70,39 @@ export default function AdminDashboard() {
             );
           })}
         </div>
+
+        {/* Charts */}
+        {chartData && (() => {
+          const months = new Set<string>();
+          chartData.jobsByMonth.forEach(d => months.add(d.month));
+          chartData.applicationsByMonth.forEach(d => months.add(d.month));
+          chartData.usersByMonth.forEach(d => months.add(d.month));
+          const data = Array.from(months).sort().map(m => ({
+            month: m,
+            'Tin tuyển dụng': chartData.jobsByMonth.find(d => d.month === m)?.count ?? 0,
+            'Đơn ứng tuyển': chartData.applicationsByMonth.find(d => d.month === m)?.count ?? 0,
+            'Người dùng mới': chartData.usersByMonth.find(d => d.month === m)?.count ?? 0,
+          }));
+          return (
+            <div className="mt-8 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-bold text-gray-900">Thống kê 6 tháng gần đây</h2>
+              <div className="mt-4 h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="Tin tuyển dụng" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Đơn ứng tuyển" fill="#ec4899" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Người dùng mới" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Quick access */}
         <div className="mt-10">

@@ -80,6 +80,10 @@ public class Job {
     @Column(nullable = false, length = 100)
     private String city;
 
+    private Double latitude;
+
+    private Double longitude;
+
     /* ================== OTHER ================== */
 
     @Builder.Default

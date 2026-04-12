@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { jobService } from '@/services/jobService';
 import { categoryService } from '@/services/categoryService';
 import { locationService, type Province } from '@/services/locationService';
+import MapboxAddressInput from '@/components/MapboxAddressInput';
 import type { Category, JobUpdateRequest, JobType, JobLevel } from '@/types';
 
 const jobTypeOptions: { value: JobType; label: string }[] = [
@@ -187,7 +188,19 @@ export default function EditJobPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Địa điểm làm việc</label>
-                <input type="text" value={form.location ?? ''} onChange={(e) => set('location', e.target.value)} className={inputCls} />
+                <MapboxAddressInput
+                  value={form.location ?? ''}
+                  onChange={(address, city, coords) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      location: address,
+                      ...(city ? { city } : {}),
+                      ...(coords ? { latitude: coords.lat, longitude: coords.lng } : {}),
+                    }));
+                  }}
+                  placeholder="Nhập địa chỉ, tìm kiếm trên bản đồ..."
+                  className={inputCls}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Tỉnh/Thành phố</label>

@@ -24,6 +24,8 @@ public class JobUpdateRequest {
     private Boolean negotiable;
     private String location;
     private String city;
+    private Double latitude;
+    private Double longitude;
     private Integer positions;
     private LocalDate deadline;
     private Integer categoryId;

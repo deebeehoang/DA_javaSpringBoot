@@ -1,15 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { jobService } from '@/services/jobService';
 import { categoryService } from '@/services/categoryService';
 import { locationService, type Province } from '@/services/locationService';
-import type { Job, Category, JobType, JobLevel } from '@/types';
+import JobCard from '@/components/JobCard';
+import type { Category, Job, JobType, JobLevel } from '@/types';
 
 const jobTypeLabels: Record<string, string> = {
-  FULL_TIME: 'Full-time', PART_TIME: 'Part-time', INTERNSHIP: 'Thực tập', FREELANCE: 'Freelance',
+  FULL_TIME: 'Full-time',
+  PART_TIME: 'Part-time',
+  INTERNSHIP: 'Thực tập',
+  FREELANCE: 'Freelance',
 };
+
 const jobLevelLabels: Record<string, string> = {
-  INTERN: 'Intern', FRESHER: 'Fresher', JUNIOR: 'Junior', SENIOR: 'Senior', MANAGER: 'Manager',
+  INTERN: 'Thực tập sinh',
+  FRESHER: 'Fresher',
+  JUNIOR: 'Junior',
+  SENIOR: 'Senior',
+  MANAGER: 'Quản lý',
+  ANY: 'Tất cả cấp bậc',
 };
 
 export default function JobListPage() {
@@ -21,6 +31,11 @@ export default function JobListPage() {
   const [totalElements, setTotalElements] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [keywordInput, setKeywordInput] = useState('');
+  const suggestRef = useRef<HTMLDivElement>(null);
+  const suggestTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const keyword = searchParams.get('keyword') ?? '';
   const categoryId = searchParams.get('categoryId') ?? '';
@@ -35,6 +50,49 @@ export default function JobListPage() {
     categoryService.getAll().then((res) => setCategories(res.data.data ?? []));
     locationService.getProvinces().then(setProvinces).catch(() => {});
   }, []);
+
+  // Sync keyword input from URL
+  useEffect(() => {
+    setKeywordInput(keyword);
+  }, [keyword]);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (suggestRef.current && !suggestRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleKeywordChange = (value: string) => {
+    setKeywordInput(value);
+    if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current);
+    if (value.trim().length >= 2) {
+      suggestTimerRef.current = setTimeout(() => {
+        jobService.suggest(value.trim()).then((res) => {
+          setSuggestions(res.data.data ?? []);
+          setShowSuggestions(true);
+        }).catch(() => {});
+      }, 300);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const selectSuggestion = (s: string) => {
+    setKeywordInput(s);
+    setShowSuggestions(false);
+    updateFilter('keyword', s);
+  };
+
+  const handleKeywordSubmit = () => {
+    setShowSuggestions(false);
+    updateFilter('keyword', keywordInput);
+  };
 
   // Auto-show advanced filters if they have values
   useEffect(() => {
@@ -79,18 +137,6 @@ export default function JobListPage() {
 
   const hasFilters = keyword || categoryId || city || jobType || jobLevel || salaryMin || salaryMax;
 
-  const formatSalary = (min?: number, max?: number) => {
-    if (!min && !max) return null;
-    const fmt = (n: number) => {
-      if (n >= 1000000) return (n / 1000000).toFixed(0) + ' triệu';
-      if (n >= 1000) return (n / 1000).toFixed(0) + 'K';
-      return n.toLocaleString();
-    };
-    if (min && max) return `${fmt(min)} - ${fmt(max)}`;
-    if (min) return `Từ ${fmt(min)}`;
-    return `Đến ${fmt(max!)}`;
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Search Header */}
@@ -101,17 +147,35 @@ export default function JobListPage() {
 
           {/* Main Filters */}
           <div className="mt-5 flex flex-col gap-3 md:flex-row">
-            <div className="relative flex-1">
+            <div className="relative flex-1" ref={suggestRef}>
               <svg className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
                 type="text"
                 placeholder="Tìm theo từ khóa, vị trí, công ty..."
-                value={keyword}
-                onChange={(e) => updateFilter('keyword', e.target.value)}
+                value={keywordInput}
+                onChange={(e) => handleKeywordChange(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleKeywordSubmit(); }}
+                onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
                 className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 text-sm transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 z-20 mt-1 max-h-60 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => selectSuggestion(s)}
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      <svg className="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <select value={city} onChange={(e) => updateFilter('city', e.target.value)}
               className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 md:w-52">
@@ -214,57 +278,7 @@ export default function JobListPage() {
           <>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {jobs.map((job) => (
-                <Link key={job.id} to={`/jobs/${job.id}`}
-                  className="group rounded-xl border border-gray-100 bg-white p-5 transition hover:border-blue-200 hover:shadow-lg hover:shadow-blue-50">
-                  <div className="flex items-start gap-3">
-                    {job.employer?.logoUrl ? (
-                      <img src={job.employer.logoUrl} alt="" className="h-12 w-12 rounded-lg border object-contain" />
-                    ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-50 text-lg font-bold text-blue-600">
-                        {job.employer?.companyName?.[0] ?? 'C'}
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <h3 className="truncate text-base font-semibold text-gray-900 group-hover:text-blue-600">
-                        {job.title}
-                      </h3>
-                      <p className="mt-0.5 truncate text-sm text-gray-500">{job.employer?.companyName}</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap gap-1.5">
-                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
-                      {jobTypeLabels[job.jobType] ?? job.jobType}
-                    </span>
-                    {job.jobLevel && job.jobLevel !== 'ANY' && (
-                      <span className="inline-flex items-center rounded-full bg-purple-50 px-2.5 py-1 text-xs font-medium text-purple-700">
-                        {jobLevelLabels[job.jobLevel] ?? job.jobLevel}
-                      </span>
-                    )}
-                    <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2.5 py-1 text-xs text-gray-600">
-                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      {job.city}
-                    </span>
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between">
-                    {formatSalary(job.salaryMin, job.salaryMax) ? (
-                      <span className="text-sm font-semibold text-green-600">
-                        {formatSalary(job.salaryMin, job.salaryMax)}
-                      </span>
-                    ) : (
-                      <span className="text-sm text-gray-400">Thỏa thuận</span>
-                    )}
-                    {job.deadline && (
-                      <span className="text-xs text-gray-400">
-                        Hạn: {new Date(job.deadline).toLocaleDateString('vi-VN')}
-                      </span>
-                    )}
-                  </div>
-                </Link>
+                <JobCard key={job.id} job={job} />
               ))}
             </div>
 

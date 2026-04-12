@@ -20,6 +20,11 @@ import AdminDashboard from '@/pages/AdminDashboard';
 import AdminUsersPage from '@/pages/AdminUsersPage';
 import AdminJobsPage from '@/pages/AdminJobsPage';
 import AdminCategoriesPage from '@/pages/AdminCategoriesPage';
+import AdminSkillsPage from '@/pages/AdminSkillsPage';
+import ChangePasswordPage from '@/pages/ChangePasswordPage';
+import CandidateDashboard from '@/pages/CandidateDashboard';
+import RecommendedJobsPage from '@/pages/RecommendedJobsPage';
+import ApplicationHistoryPage from '@/pages/ApplicationHistoryPage';
 
 export default function App() {
   return (
@@ -32,11 +37,19 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
+        {/* All authenticated */}
+        <Route element={<ProtectedRoute allowedRoles={['CANDIDATE', 'EMPLOYER', 'ADMIN']} />}>
+          <Route path="/change-password" element={<ChangePasswordPage />} />
+        </Route>
+
         {/* Candidate */}
         <Route element={<ProtectedRoute allowedRoles={['CANDIDATE']} />}>
+          <Route path="/candidate/dashboard" element={<CandidateDashboard />} />
           <Route path="/candidate/profile" element={<CandidateProfilePage />} />
           <Route path="/candidate/skills" element={<CandidateSkillsPage />} />
           <Route path="/candidate/saved-jobs" element={<SavedJobsPage />} />
+          <Route path="/candidate/recommendations" element={<RecommendedJobsPage />} />
+          <Route path="/candidate/applications" element={<ApplicationHistoryPage />} />
         </Route>
 
         {/* Employer */}
@@ -55,6 +68,7 @@ export default function App() {
           <Route path="/admin/users" element={<AdminUsersPage />} />
           <Route path="/admin/jobs" element={<AdminJobsPage />} />
           <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+          <Route path="/admin/skills" element={<AdminSkillsPage />} />
         </Route>
       </Route>
     </Routes>

@@ -4,12 +4,13 @@ import axiosInstance from '@/services/axiosInstance';
 interface Feature {
   id: string;
   place_name: string;
+  center?: [number, number];
   context?: { id: string; text: string }[];
 }
 
 interface Props {
   value: string;
-  onChange: (address: string, city?: string) => void;
+  onChange: (address: string, city?: string, coords?: { lng: number; lat: number }) => void;
   placeholder?: string;
   className?: string;
   required?: boolean;
@@ -54,8 +55,9 @@ export default function MapboxAddressInput({ value, onChange, placeholder = 'Nhá
   const handleSelect = (feature: Feature) => {
     const address = feature.place_name;
     const cityCtx = feature.context?.find((c) => c.id.startsWith('place') || c.id.startsWith('region'));
+    const coords = feature.center ? { lng: feature.center[0], lat: feature.center[1] } : undefined;
     setQuery(address);
-    onChange(address, cityCtx?.text);
+    onChange(address, cityCtx?.text, coords);
     setOpen(false);
     setSuggestions([]);
   };

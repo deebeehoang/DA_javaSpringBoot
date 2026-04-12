@@ -1,5 +1,6 @@
 package com.example.DA_WebTuyenDungViecLam.service;
 
+import com.example.DA_WebTuyenDungViecLam.dto.request.ChangePasswordRequest;
 import com.example.DA_WebTuyenDungViecLam.dto.request.LoginRequest;
 import com.example.DA_WebTuyenDungViecLam.dto.request.RegisterRequest;
 import com.example.DA_WebTuyenDungViecLam.dto.response.AuthResponse;
@@ -12,4 +13,6 @@ public interface AuthService {
     AuthResponse login(LoginRequest request);
 
     UserResponse getCurrentUser(String email);
+
+    void changePassword(String email, ChangePasswordRequest request);
 }

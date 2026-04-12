@@ -17,6 +17,9 @@ public class JobSkillId implements Serializable {
         this.skillId = skillId;
     }
 
+    public Long getJobId() { return jobId; }
+    public Integer getSkillId() { return skillId; }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

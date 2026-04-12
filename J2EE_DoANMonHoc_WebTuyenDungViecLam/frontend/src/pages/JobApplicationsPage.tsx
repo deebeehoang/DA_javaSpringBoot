@@ -5,6 +5,7 @@ import type { Application } from '@/types';
 
 const statusLabel: Record<string, string> = {
   PENDING: 'Chờ duyệt',
+  VIEWED: 'CV đã xem',
   INTERVIEW: 'Phỏng vấn',
   APPROVED: 'Chấp nhận',
   REJECTED: 'Từ chối',
@@ -12,6 +13,7 @@ const statusLabel: Record<string, string> = {
 
 const statusBadge: Record<string, string> = {
   PENDING: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+  VIEWED: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   INTERVIEW: 'bg-blue-50 text-blue-700 border-blue-200',
   APPROVED: 'bg-green-50 text-green-700 border-green-200',
   REJECTED: 'bg-red-50 text-red-700 border-red-200',
@@ -99,7 +101,7 @@ export default function JobApplicationsPage() {
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2 border-t border-gray-50 pt-4">
-                  {app.status === 'PENDING' && (
+                  {(app.status === 'PENDING' || app.status === 'VIEWED') && (
                     <>
                       <button onClick={() => updateStatus(app.id, 'INTERVIEW')}
                         className="rounded-lg bg-blue-50 px-4 py-2 text-xs font-medium text-blue-700 transition hover:bg-blue-100">

@@ -1,5 +1,6 @@
 package com.example.DA_WebTuyenDungViecLam.controller;
 
+import com.example.DA_WebTuyenDungViecLam.dto.request.ChangePasswordRequest;
 import com.example.DA_WebTuyenDungViecLam.dto.request.LoginRequest;
 import com.example.DA_WebTuyenDungViecLam.dto.request.RegisterRequest;
 import com.example.DA_WebTuyenDungViecLam.dto.response.ApiResponse;
@@ -35,5 +36,13 @@ public class AuthController {
     public ResponseEntity<ApiResponse<UserResponse>> me(Authentication authentication) {
         UserResponse data = authService.getCurrentUser(authentication.getName());
         return ResponseEntity.ok(ApiResponse.success(data));
+    }
+
+    @PutMapping("/change-password")
+    public ResponseEntity<ApiResponse<String>> changePassword(
+            Authentication authentication,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(authentication.getName(), request);
+        return ResponseEntity.ok(ApiResponse.success("Đổi mật khẩu thành công"));
     }
 }

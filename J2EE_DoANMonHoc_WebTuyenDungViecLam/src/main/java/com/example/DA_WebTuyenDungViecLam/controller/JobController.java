@@ -21,6 +21,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/jobs")
 @RequiredArgsConstructor
@@ -51,6 +53,11 @@ public class JobController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<JobResponse>> getById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(jobService.getById(id)));
+    }
+
+    @GetMapping("/suggest")
+    public ResponseEntity<ApiResponse<List<String>>> suggest(@RequestParam String q) {
+        return ResponseEntity.ok(ApiResponse.success(jobService.suggest(q)));
     }
 
     @PostMapping

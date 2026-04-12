@@ -39,6 +39,9 @@ public class JobCreateRequest {
     @NotBlank(message = "Thành phố không được trống")
     private String city;
 
+    private Double latitude;
+    private Double longitude;
+
     private Integer positions;
     private LocalDate deadline;
 

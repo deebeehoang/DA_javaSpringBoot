@@ -36,6 +36,15 @@ public class Application {
     @Column(name = "cover_letter", columnDefinition = "TEXT")
     private String coverLetter;
 
+    @Column(name = "cv_url", length = 500)
+    private String cvUrl;
+
+    @Column(name = "cv_viewed")
+    private Boolean cvViewed = false;
+
+    @Column(name = "cv_viewed_at")
+    private LocalDateTime cvViewedAt;
+
     @Column(name = "applied_at", updatable = false)
     private LocalDateTime appliedAt;
 
@@ -43,6 +52,4 @@ public class Application {
     protected void onCreate() {
         this.appliedAt = LocalDateTime.now();
     }
-
-    // getter / setter
 }

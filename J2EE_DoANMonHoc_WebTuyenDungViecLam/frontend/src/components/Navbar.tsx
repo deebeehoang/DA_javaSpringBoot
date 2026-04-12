@@ -104,11 +104,11 @@ export default function Navbar() {
             )}
             {user?.role === 'CANDIDATE' && (
               <>
-                <Link to="/candidate/skills" className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900">
-                  Kỹ năng
+                <Link to="/candidate/dashboard" className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900">
+                  Dashboard
                 </Link>
-                <Link to="/candidate/saved-jobs" className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900">
-                  Việc đã lưu
+                <Link to="/candidate/applications" className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900">
+                  Lịch sử ứng tuyển
                 </Link>
               </>
             )}
@@ -125,6 +125,9 @@ export default function Navbar() {
                 </Link>
                 <Link to="/admin/categories" className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900">
                   Danh mục
+                </Link>
+                <Link to="/admin/skills" className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900">
+                  Kỹ năng
                 </Link>
               </>
             )}
@@ -205,6 +208,13 @@ export default function Navbar() {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
                           Hồ sơ cá nhân
+                        </Link>
+                        <Link to="/change-password" onClick={() => setMenuOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 transition hover:bg-gray-50">
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                          </svg>
+                          Đổi mật khẩu
                         </Link>
                         <button onClick={handleLogout}
                           className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-red-600 transition hover:bg-red-50">

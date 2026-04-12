@@ -24,6 +24,8 @@ public class JobResponse {
     private Boolean negotiable;
     private String location;
     private String city;
+    private Double latitude;
+    private Double longitude;
     private Integer positions;
     private String deadline;
     private Integer views;
